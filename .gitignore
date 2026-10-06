@@ -1,0 +1,35 @@
+# Visual Studio
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Build output
+**/bin/
+**/obj/
+
+# NuGet
+packages/
+
+# Test results
+TestResults/
+
+# Rider
+.idea/
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+
+# User secrets / local configuration
+appsettings.Local.json
+appsettings.*.local.json
+
+# Environment files
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
