@@ -1,5 +1,4 @@
-﻿using System.Net;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 
 namespace OrderService.Clients;
 
@@ -28,5 +27,41 @@ public class InventoryClient
 
         return items?
             .FirstOrDefault(x => x.ProductId == productId);
+    }
+
+    public async Task<bool> ReserveStockAsync(
+        Guid inventoryItemId,
+        int quantity,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new
+        {
+            Quantity = quantity
+        };
+
+        var response = await _httpClient.PostAsJsonAsync(
+            $"inventory/v1/items/{inventoryItemId}/reserve",
+            request,
+            cancellationToken);
+
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> ReleaseStockAsync(
+        Guid inventoryItemId,
+        int quantity,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new
+        {
+            Quantity = quantity
+        };
+
+        var response = await _httpClient.PostAsJsonAsync(
+            $"inventory/v1/items/{inventoryItemId}/release",
+            request,
+            cancellationToken);
+
+        return response.IsSuccessStatusCode;
     }
 }

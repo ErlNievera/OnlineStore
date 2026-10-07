@@ -1,12 +1,22 @@
-﻿namespace OrderService.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace OrderService.DTOs;
 
 public class CreateOrderRequest
 {
-    public string CustomerName { get; set; } = string.Empty;
-
-    public string CustomerEmail { get; set; } = string.Empty;
-
+    [Required]
     public Guid ProductId { get; set; }
 
+    [Required]
+    public string CustomerName { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    public string CustomerEmail { get; set; } = string.Empty;
+
+    [Range(1, 100)]
+    public int Quantity { get; set; }
+
+    [Range(0.01, double.MaxValue)]
     public decimal TotalAmount { get; set; }
 }

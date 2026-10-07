@@ -147,6 +147,100 @@ public class InventoryItemsController : ControllerBase
         return Ok(ToResponse(item));
     }
 
+    // POST: /inventory/v1/items/{id}/reserve
+    [HttpPost("{id:guid}/reserve")]
+    public async Task<ActionResult<InventoryItemResponse>> ReserveStock(
+        Guid id,
+        ReserveInventoryRequest request)
+    {
+        var item = await _db.InventoryItems
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (item is null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Inventory item not found",
+                Detail = $"No inventory item was found with ID '{id}'."
+            });
+        }
+
+        if (request.Quantity <= 0)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid quantity",
+                Detail = "Reservation quantity must be greater than 0."
+            });
+        }
+
+        if (item.AvailableQuantity < request.Quantity)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Insufficient stock",
+                Detail = $"Only {item.AvailableQuantity} item(s) are available."
+            });
+        }
+
+        item.ReservedQuantity += request.Quantity;
+        item.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(ToResponse(item));
+    }
+
+    // POST: /inventory/v1/items/{id}/release
+    [HttpPost("{id:guid}/release")]
+    public async Task<ActionResult<InventoryItemResponse>> ReleaseStock(
+        Guid id,
+        ReleaseInventoryRequest request)
+    {
+        var item = await _db.InventoryItems
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (item is null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Inventory item not found",
+                Detail = $"No inventory item was found with ID '{id}'."
+            });
+        }
+
+        if (request.Quantity <= 0)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid quantity",
+                Detail = "Release quantity must be greater than 0."
+            });
+        }
+
+        if (request.Quantity > item.ReservedQuantity)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid release",
+                Detail = $"Cannot release {request.Quantity} item(s). Only {item.ReservedQuantity} item(s) are currently reserved."
+            });
+        }
+
+        item.ReservedQuantity -= request.Quantity;
+        item.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(ToResponse(item));
+    }
+
     // DELETE: /inventory/v1/items/{id}
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteItem(Guid id)

@@ -44,8 +44,14 @@ public class CheckoutModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        // Make sure ProductId is included in the order request
+        OrderRequest.ProductId = ProductId;
+
+        // Calculate total based on quantity
         OrderRequest.TotalAmount = Price * OrderRequest.Quantity;
 
+        // Remove automatic validation for TotalAmount
+        // because we calculate it on the server
         ModelState.Remove("OrderRequest.TotalAmount");
 
         if (!ModelState.IsValid)
@@ -55,9 +61,11 @@ public class CheckoutModel : PageModel
 
         try
         {
+            // 1. Create the order
             OrderResultDto orderResult =
                 await _orderApiClient.CreateOrderAsync(OrderRequest);
 
+            // 2. Create the payment
             CreatePaymentRequest paymentRequest = new CreatePaymentRequest
             {
                 OrderId = orderResult.Id,
@@ -68,6 +76,7 @@ public class CheckoutModel : PageModel
             PaymentResultDto paymentResult =
                 await _paymentApiClient.CreatePaymentAsync(paymentRequest);
 
+            // 3. Show success message
             Message =
                 $"Order created successfully. " +
                 $"Order ID: {orderResult.Id}, " +

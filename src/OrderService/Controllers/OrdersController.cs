@@ -16,47 +16,47 @@ public class OrdersController : ControllerBase
 {
     private readonly OrderDbContext _db;
     private readonly CatalogClient _catalogClient;
+    private readonly InventoryClient _inventoryClient;
     private readonly RabbitMqPublisher _rabbitMqPublisher;
 
     public OrdersController(
         OrderDbContext db,
         CatalogClient catalogClient,
+        InventoryClient inventoryClient,
         RabbitMqPublisher rabbitMqPublisher)
     {
         _db = db;
         _catalogClient = catalogClient;
+        _inventoryClient = inventoryClient;
         _rabbitMqPublisher = rabbitMqPublisher;
     }
 
     // GET: /orders/v1/orders
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<OrderResponse>>> GetOrders()
+    public async Task<ActionResult<IEnumerable<OrderResponse>>> GetOrders(
+        CancellationToken cancellationToken)
     {
-        var orders = await _db.Orders
+        List<Order> orders = await _db.Orders
             .AsNoTracking()
-            .Select(o => new OrderResponse
-            {
-                Id = o.Id,
-                ProductId = o.ProductId,
-                CustomerName = o.CustomerName,
-                CustomerEmail = o.CustomerEmail,
-                TotalAmount = o.TotalAmount,
-                Status = o.Status,
-                CreatedAt = o.CreatedAt,
-                UpdatedAt = o.UpdatedAt
-            })
-            .ToListAsync();
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
 
-        return Ok(orders);
+        List<OrderResponse> response = orders
+            .Select(ToResponse)
+            .ToList();
+
+        return Ok(response);
     }
 
     // GET: /orders/v1/orders/{id}
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<OrderResponse>> GetOrder(Guid id)
+    public async Task<ActionResult<OrderResponse>> GetOrder(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var order = await _db.Orders
+        Order? order = await _db.Orders
             .AsNoTracking()
-            .FirstOrDefaultAsync(o => o.Id == id);
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         if (order is null)
         {
@@ -78,7 +78,7 @@ public class OrdersController : ControllerBase
         CancellationToken cancellationToken)
     {
         // 1. Validate product through CatalogService
-        var product = await _catalogClient.GetProductAsync(
+        CatalogProductResponse? product = await _catalogClient.GetProductAsync(
             request.ProductId,
             cancellationToken);
 
@@ -92,6 +92,7 @@ public class OrdersController : ControllerBase
             });
         }
 
+        // 2. Check if product is active
         if (!product.IsActive)
         {
             return BadRequest(new ProblemDetails
@@ -102,10 +103,65 @@ public class OrdersController : ControllerBase
             });
         }
 
-        // 2. Create the order
-        var now = DateTime.UtcNow;
+        // 3. Validate quantity
+        if (request.Quantity <= 0)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid quantity",
+                Detail = "Quantity must be greater than zero."
+            });
+        }
 
-        var order = new Order
+        // 4. Find inventory using ProductId
+        InventoryItemResponse? inventory =
+            await _inventoryClient.GetInventoryByProductIdAsync(
+                request.ProductId,
+                cancellationToken);
+
+        if (inventory is null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Inventory not found",
+                Detail = $"No inventory item was found for product '{request.ProductId}'."
+            });
+        }
+
+        // 5. Check available stock
+        if (inventory.AvailableQuantity < request.Quantity)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Insufficient stock",
+                Detail =
+                    $"Only {inventory.AvailableQuantity} item(s) are currently available."
+            });
+        }
+
+        // 6. Reserve inventory
+        bool stockReserved = await _inventoryClient.ReserveStockAsync(
+            inventory.Id,
+            request.Quantity,
+            cancellationToken);
+
+        if (!stockReserved)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Unable to reserve inventory",
+                Detail = "The requested inventory could not be reserved."
+            });
+        }
+
+        // 7. Create order
+        DateTime now = DateTime.UtcNow;
+
+        Order order = new Order
         {
             Id = Guid.NewGuid(),
             ProductId = request.ProductId,
@@ -118,36 +174,32 @@ public class OrdersController : ControllerBase
         };
 
         _db.Orders.Add(order);
-
-        // 3. Save the order
         await _db.SaveChangesAsync(cancellationToken);
 
-        // 4. Get or create correlation ID
-        var correlationId =
+        // 8. Get or create correlation ID
+        string correlationId =
             HttpContext.Request.Headers["X-Correlation-ID"].FirstOrDefault()
             ?? Guid.NewGuid().ToString();
 
-        // 5. Create OrderPlaced event
-        var orderPlaced = new OrderPlaced(
+        // 9. Create OrderPlaced event
+        OrderPlaced orderPlaced = new OrderPlaced(
             order.Id,
             order.ProductId,
-            1,
+            request.Quantity,
             order.TotalAmount,
             now,
             correlationId);
 
-        // 6. Publish event to RabbitMQ
-       // await _rabbitMqPublisher.PublishOrderPlacedAsync(
-          //  orderPlaced,
-           // cancellationToken);
+        // 10. RabbitMQ publishing will be enabled later
+        // await _rabbitMqPublisher.PublishOrderPlacedAsync(
+        //     orderPlaced,
+        //     cancellationToken);
 
-        // 7. Return created order
-        var response = ToResponse(order);
-
+        // 11. Return created order
         return CreatedAtAction(
             nameof(GetOrder),
             new { id = order.Id },
-            response);
+            ToResponse(order));
     }
 
     // PUT: /orders/v1/orders/{id}
@@ -157,8 +209,8 @@ public class OrdersController : ControllerBase
         UpdateOrderRequest request,
         CancellationToken cancellationToken)
     {
-        var order = await _db.Orders
-            .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        Order? order = await _db.Orders
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         if (order is null)
         {
@@ -187,8 +239,8 @@ public class OrdersController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        var order = await _db.Orders
-            .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        Order? order = await _db.Orders
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         if (order is null)
         {
@@ -201,7 +253,6 @@ public class OrdersController : ControllerBase
         }
 
         _db.Orders.Remove(order);
-
         await _db.SaveChangesAsync(cancellationToken);
 
         return NoContent();
