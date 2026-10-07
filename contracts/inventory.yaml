@@ -1,0 +1,434 @@
+openapi: 3.0.0
+info:
+  title: Inventory Service API
+  description: Inventory management service for the online store platform
+  version: 1.0.0
+servers:
+  - url: http://localhost:5003/inventory/v1
+    description: Development server
+
+paths:
+  /inventory:
+    get:
+      operationId: listInventory
+      summary: List all inventory items
+      tags:
+        - Inventory
+      parameters:
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of inventory items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    post:
+      operationId: createInventoryItem
+      summary: Create a new inventory item
+      tags:
+        - Inventory
+      parameters:
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInventoryRequest'
+      responses:
+        '201':
+          description: Inventory item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /inventory/{productId}:
+    get:
+      operationId: getInventoryByProductId
+      summary: Get inventory for a product
+      tags:
+        - Inventory
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+            format: int32
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Inventory item retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+        '404':
+          description: Inventory item not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    put:
+      operationId: updateInventory
+      summary: Update inventory for a product
+      tags:
+        - Inventory
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+            format: int32
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInventoryRequest'
+      responses:
+        '200':
+          description: Inventory updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Inventory item not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    delete:
+      operationId: deleteInventory
+      summary: Delete inventory for a product
+      tags:
+        - Inventory
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+            format: int32
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Inventory deleted successfully
+        '404':
+          description: Inventory item not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /inventory/{productId}/reserve:
+    post:
+      operationId: reserveStock
+      summary: Reserve stock for a product
+      tags:
+        - Inventory
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+            format: int32
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReserveStockRequest'
+      responses:
+        '200':
+          description: Stock reserved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
+        '400':
+          description: Invalid request or insufficient stock
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Product not found in inventory
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /inventory/{productId}/release:
+    post:
+      operationId: releaseStock
+      summary: Release reserved stock for a product
+      tags:
+        - Inventory
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+            format: int32
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReleaseStockRequest'
+      responses:
+        '200':
+          description: Stock released successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Product not found in inventory
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  schemas:
+    InventoryItem:
+      type: object
+      required:
+        - productId
+        - quantityAvailable
+        - quantityReserved
+        - createdAt
+      properties:
+        productId:
+          type: integer
+          format: int32
+          description: Product ID
+        quantityAvailable:
+          type: integer
+          format: int32
+          description: Quantity available for purchase
+        quantityReserved:
+          type: integer
+          format: int32
+          description: Quantity reserved by pending orders
+        createdAt:
+          type: string
+          format: date-time
+          description: When the inventory item was created
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the inventory was last updated
+
+    CreateInventoryRequest:
+      type: object
+      required:
+        - productId
+        - quantityAvailable
+      properties:
+        productId:
+          type: integer
+          format: int32
+          description: Product ID
+        quantityAvailable:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Initial quantity available
+
+    UpdateInventoryRequest:
+      type: object
+      required:
+        - quantityAvailable
+      properties:
+        quantityAvailable:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Updated quantity available
+
+    ReserveStockRequest:
+      type: object
+      required:
+        - quantity
+      properties:
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Quantity to reserve
+
+    ReleaseStockRequest:
+      type: object
+      required:
+        - quantity
+      properties:
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Quantity to release
+
+    ReservationResult:
+      type: object
+      required:
+        - success
+        - productId
+        - reservedQuantity
+      properties:
+        success:
+          type: boolean
+          description: Whether reservation was successful
+        productId:
+          type: integer
+          format: int32
+          description: Product ID
+        reservedQuantity:
+          type: integer
+          format: int32
+          description: Quantity that was reserved
+        availableQuantity:
+          type: integer
+          format: int32
+          description: Remaining available quantity after reservation
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          description: A URI reference to the problem type
+        title:
+          type: string
+          description: A short, human-readable summary of the problem
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code
+        detail:
+          type: string
+          description: A human-readable explanation specific to this occurrence
+        instance:
+          type: string
+          description: A URI reference that identifies the specific occurrence
