@@ -1,0 +1,319 @@
+openapi: 3.0.0
+info:
+  title: Payment Service API
+  description: Payment processing service for the online store platform
+  version: 1.0.0
+servers:
+  - url: http://localhost:5004/payment/v1
+    description: Development server
+
+paths:
+  /payments:
+    get:
+      operationId: listPayments
+      summary: List all payments
+      tags:
+        - Payments
+      parameters:
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    post:
+      operationId: createPayment
+      summary: Create a new payment
+      tags:
+        - Payments
+      parameters:
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+      responses:
+        '201':
+          description: Payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '402':
+          description: Payment declined
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /payments/{id}:
+    get:
+      operationId: getPaymentById
+      summary: Get a payment by ID
+      tags:
+        - Payments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Payment ID
+          schema:
+            type: integer
+            format: int32
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '404':
+          description: Payment not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    delete:
+      operationId: deletePayment
+      summary: Delete a payment record
+      tags:
+        - Payments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Payment ID
+          schema:
+            type: integer
+            format: int32
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Payment deleted successfully
+        '404':
+          description: Payment not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /payments/{id}/refund:
+    post:
+      operationId: refundPayment
+      summary: Refund a payment
+      tags:
+        - Payments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Payment ID
+          schema:
+            type: integer
+            format: int32
+        - name: X-Correlation-ID
+          in: header
+          description: Correlation ID for tracing requests
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+      responses:
+        '200':
+          description: Payment refunded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Payment not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  schemas:
+    Payment:
+      type: object
+      required:
+        - id
+        - orderId
+        - amount
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Payment ID
+        orderId:
+          type: integer
+          format: int32
+          description: Associated Order ID
+        amount:
+          type: number
+          format: decimal
+          description: Payment amount
+        status:
+          type: string
+          enum:
+            - Pending
+            - Completed
+            - Refunded
+            - Failed
+          description: Payment status
+        createdAt:
+          type: string
+          format: date-time
+          description: When the payment was created
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the payment was last updated
+
+    CreatePaymentRequest:
+      type: object
+      required:
+        - orderId
+        - amount
+      properties:
+        orderId:
+          type: integer
+          format: int32
+          description: Order ID to pay for
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Payment amount
+        cardNumber:
+          type: string
+          pattern: '^\\d{16}$'
+          description: Card number (16 digits)
+        cardHolder:
+          type: string
+          description: Card holder name
+        expiryDate:
+          type: string
+          pattern: '^\\d{2}\\/\\d{2}$'
+          description: Expiry date (MM/YY)
+        cvv:
+          type: string
+          pattern: '^\\d{3,4}$'
+          description: CVV
+
+    RefundRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Amount to refund
+        reason:
+          type: string
+          description: Reason for refund
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          description: A URI reference to the problem type
+        title:
+          type: string
+          description: A short, human-readable summary of the problem
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code
+        detail:
+          type: string
+          description: A human-readable explanation specific to this occurrence
+        instance:
+          type: string
+          description: A URI reference that identifies the specific occurrence
