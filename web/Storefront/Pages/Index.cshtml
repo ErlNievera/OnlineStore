@@ -1,0 +1,468 @@
+﻿@page
+
+@model Storefront.Pages.IndexModel
+
+@{
+    ViewData["Title"] = "Home";
+}
+
+
+
+<!-- =========================
+     HERO SECTION
+     ========================= -->
+
+<section class="hero-section">
+
+    <div class="container">
+
+        <div class="hero-content">
+
+
+            <!-- SMALL LABEL -->
+
+            <span class="hero-badge">
+
+                WELCOME TO ONLINESTORE
+
+            </span>
+
+
+            <!-- MAIN HEADING -->
+
+            <h1>
+
+                Shop what you need.
+
+                <br />
+
+                <span>
+                    Simple. Fast. Reliable.
+                </span>
+
+            </h1>
+
+
+            <!-- DESCRIPTION -->
+
+            <p>
+
+                Browse our available products and find what
+                you're looking for in just a few clicks.
+
+            </p>
+
+
+            <!-- BUTTON -->
+
+            <a href="#products"
+               class="hero-button">
+
+                Browse Products
+
+                <i class="bi bi-arrow-down"></i>
+
+            </a>
+
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     PRODUCTS SECTION
+     ========================= -->
+
+<section id="products"
+         class="products-section">
+
+    <div class="container">
+
+
+        <!-- SECTION HEADING -->
+
+        <div class="section-heading">
+
+            <span class="section-label">
+
+                SHOP
+
+            </span>
+
+            <h2 class="section-title">
+
+                Our Products
+
+            </h2>
+
+            <p class="section-subtitle">
+
+                Explore our available products and choose what you need.
+
+            </p>
+
+        </div>
+
+
+
+        <!-- =========================
+             NO PRODUCTS
+             ========================= -->
+        @if (!Model.Products.Any())
+        {
+
+            <div class="empty-products">
+
+
+                <div class="empty-icon">
+
+                    <i class="bi bi-box-seam"></i>
+
+                </div>
+
+
+                <h3>
+
+                    No Products Available
+
+                </h3>
+
+
+                <p>
+
+                    There are currently no products available.
+
+                </p>
+
+
+            </div>
+
+        }
+
+
+        <!-- =========================
+             PRODUCTS
+             ========================= -->
+        else
+        {
+
+        <div class="row g-4">
+
+
+            @foreach (var product in Model.Products)
+            {
+
+                var inventory = Model.InventoryItems
+                .FirstOrDefault(x => x.ProductId == product.Id);
+
+
+                <div class="col-md-6 col-lg-4">
+
+
+                    <div class="product-card">
+
+
+                        <!-- PRODUCT ICON -->
+
+                        <div class="product-icon">
+
+                            <i class="bi bi-bag"></i>
+
+                        </div>
+
+
+
+                        <!-- PRODUCT INFORMATION -->
+
+                        <div class="product-information">
+
+                            <h3 class="product-name">
+
+                                @product.Name
+
+                            </h3>
+
+
+                            <p class="product-description">
+
+                                @product.Description
+
+                            </p>
+
+                        </div>
+
+
+
+                        <!-- PRICE -->
+
+                        <div class="product-price">
+
+                            @product.Price.ToString("C")
+
+                        </div>
+
+
+
+                        <!-- =========================
+                             STOCK STATUS
+                             ========================= -->
+                        @if (inventory is null)
+                        {
+
+                            <div class="stock-status unavailable">
+
+                                <i class="bi bi-exclamation-circle"></i>
+
+                                Stock information unavailable
+
+                            </div>
+
+                        }
+
+                        else if (inventory.AvailableQuantity <= 0)
+                        {
+
+                            <div class="stock-status unavailable">
+
+                                <i class="bi bi-x-circle"></i>
+
+                                Out of stock
+
+                            </div>
+
+                        }
+
+                        else
+                        {
+
+                            <div class="stock-status available">
+
+                                <i class="bi bi-check-circle-fill"></i>
+
+                                @inventory.AvailableQuantity available
+
+                            </div>
+
+                        }
+
+
+
+                        <!-- =========================
+                             BUY BUTTON
+                             ========================= -->
+
+                        <div class="product-action">
+
+
+                            @if (inventory is not null &&
+                                                    inventory.AvailableQuantity > 0)
+                            {
+
+                                <a class="buy-button"
+                                   asp-page="/Checkout"
+                                   asp-route-productId="@product.Id"
+                                   asp-route-productName="@product.Name"
+                                   asp-route-price="@product.Price">
+
+                                    Buy Now
+
+                                    <i class="bi bi-arrow-right"></i>
+
+                                </a>
+
+                            }
+
+                            else
+                            {
+
+                                <button class="buy-button disabled-button"
+                                        disabled>
+
+                                    Unavailable
+
+                                </button>
+
+                            }
+
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+            }
+
+
+        </div>
+
+        }
+
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     FEATURES SECTION
+     ========================= -->
+
+<section class="features-section">
+
+    <div class="container">
+
+
+        <!-- SECTION HEADING -->
+
+        <div class="section-heading">
+
+            <span class="section-label">
+
+                WHY ONLINESTORE
+
+            </span>
+
+
+            <h2 class="section-title">
+
+                Shopping Made Simple
+
+            </h2>
+
+
+            <p class="section-subtitle">
+
+                Everything you need for a simple shopping experience.
+
+            </p>
+
+        </div>
+
+
+
+        <div class="row g-4 mt-3">
+
+
+            <!-- =========================
+                 FEATURE 1
+                 ========================= -->
+
+            <div class="col-md-4">
+
+                <div class="feature-card">
+
+
+                    <div class="feature-icon">
+
+                        <i class="bi bi-lightning-charge-fill"></i>
+
+                    </div>
+
+
+                    <h3>
+
+                        Simple
+
+                    </h3>
+
+
+                    <p>
+
+                        Browse products and place your order
+                        without unnecessary steps.
+
+                    </p>
+
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =========================
+                 FEATURE 2
+                 ========================= -->
+
+            <div class="col-md-4">
+
+                <div class="feature-card">
+
+
+                    <div class="feature-icon">
+
+                        <i class="bi bi-box-seam"></i>
+
+                    </div>
+
+
+                    <h3>
+
+                        Real Availability
+
+                    </h3>
+
+
+                    <p>
+
+                        Check the available stock of products
+                        before placing your order.
+
+                    </p>
+
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =========================
+                 FEATURE 3
+                 ========================= -->
+
+            <div class="col-md-4">
+
+                <div class="feature-card">
+
+
+                    <div class="feature-icon">
+
+                        <i class="bi bi-shield-check"></i>
+
+                    </div>
+
+
+                    <h3>
+
+                        Reliable
+
+                    </h3>
+
+
+                    <p>
+
+                        Orders and payments are processed
+                        through dedicated backend services.
+
+                    </p>
+
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</section>

@@ -137,9 +137,9 @@ public class OrdersController : ControllerBase
             correlationId);
 
         // 6. Publish event to RabbitMQ
-        await _rabbitMqPublisher.PublishOrderPlacedAsync(
-            orderPlaced,
-            cancellationToken);
+       // await _rabbitMqPublisher.PublishOrderPlacedAsync(
+          //  orderPlaced,
+           // cancellationToken);
 
         // 7. Return created order
         var response = ToResponse(order);

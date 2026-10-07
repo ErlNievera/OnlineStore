@@ -1,0 +1,372 @@
+﻿@page
+@model Storefront.Pages.CheckoutModel
+
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+
+<!-- =========================================================
+     CHECKOUT PAGE
+     ========================================================= -->
+
+<section class="checkout-section">
+
+    <div class="container">
+
+        <!-- PAGE HEADER -->
+
+        <div class="checkout-header">
+
+            <span class="section-label">
+                ORDER
+            </span>
+
+            <h1 class="checkout-title">
+                Checkout
+            </h1>
+
+            <p class="checkout-subtitle">
+                Review your order and provide your information.
+            </p>
+
+        </div>
+
+
+        <!-- =====================================================
+             SUCCESS / ERROR MESSAGE
+             ===================================================== -->
+        @if (!string.IsNullOrWhiteSpace(Model.Message))
+        {
+            <div class="checkout-message">
+
+                <div class="checkout-message-icon">
+
+                    <i class="bi bi-check-circle-fill"></i>
+
+                </div>
+
+                <div>
+
+                    <strong>
+                        Order Status
+                    </strong>
+
+                    <p>
+                        @Model.Message
+                    </p>
+
+                </div>
+
+            </div>
+        }
+
+
+        <!-- =====================================================
+             CHECKOUT CONTENT
+             ===================================================== -->
+
+        <div class="row g-4 justify-content-center">
+
+
+            <!-- =================================================
+                 ORDER SUMMARY
+                 ================================================= -->
+
+            <div class="col-lg-5">
+
+                <div class="checkout-card order-summary-card">
+
+
+                    <div class="checkout-card-header">
+
+                        <div>
+
+                            <span class="card-label">
+                                YOUR ORDER
+                            </span>
+
+                            <h2>
+                                Order Summary
+                            </h2>
+
+                        </div>
+
+                        <div class="checkout-card-icon">
+
+                            <i class="bi bi-bag"></i>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- PRODUCT -->
+
+                    <div class="checkout-product">
+
+                        <div class="checkout-product-icon">
+
+                            <i class="bi bi-box-seam"></i>
+
+                        </div>
+
+                        <div class="checkout-product-info">
+
+                            <span>
+                                PRODUCT
+                            </span>
+
+                            <h3>
+                                @Model.ProductName
+                            </h3>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- PRICE -->
+
+                    <div class="summary-row">
+
+                        <span>
+                            Price
+                        </span>
+
+                        <strong>
+                            @Model.Price.ToString("C")
+                        </strong>
+
+                    </div>
+
+
+                    <!-- QUANTITY -->
+
+                    <div class="summary-row">
+
+                        <span>
+                            Quantity
+                        </span>
+
+                        <strong>
+                            @Model.OrderRequest.Quantity
+                        </strong>
+
+                    </div>
+
+
+                    <!-- TOTAL -->
+
+                    <div class="summary-total">
+
+                        <span>
+                            Total
+                        </span>
+
+                        <strong>
+                            @((Model.Price * Model.OrderRequest.Quantity).ToString("C"))
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =================================================
+                 CUSTOMER INFORMATION
+                 ================================================= -->
+
+            <div class="col-lg-7">
+
+                <div class="checkout-card">
+
+
+                    <div class="checkout-card-header">
+
+                        <div>
+
+                            <span class="card-label">
+                                DETAILS
+                            </span>
+
+                            <h2>
+                                Customer Information
+                            </h2>
+
+                        </div>
+
+                        <div class="checkout-card-icon">
+
+                            <i class="bi bi-person"></i>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- =================================================
+                         FORM
+                         ================================================= -->
+
+                    <form method="post">
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="checkout-validation">
+                        </div>
+
+
+                        <!-- Hidden values -->
+
+                        <input type="hidden"
+                               asp-for="OrderRequest.ProductId" />
+
+                        <input type="hidden"
+                               asp-for="Price" />
+
+
+                        <!-- CUSTOMER NAME -->
+
+                        <div class="checkout-form-group">
+
+                            <label asp-for="OrderRequest.CustomerName">
+
+                                Customer Name
+
+                            </label>
+
+                            <div class="input-with-icon">
+
+                                <i class="bi bi-person"></i>
+
+                                <input asp-for="OrderRequest.CustomerName"
+                                       placeholder="Enter your name" />
+
+                            </div>
+
+                            <span asp-validation-for="OrderRequest.CustomerName"
+                                  class="field-validation">
+                            </span>
+
+                        </div>
+
+
+                        <!-- CUSTOMER EMAIL -->
+
+                        <div class="checkout-form-group">
+
+                            <label asp-for="OrderRequest.CustomerEmail">
+
+                                Customer Email
+
+                            </label>
+
+                            <div class="input-with-icon">
+
+                                <i class="bi bi-envelope"></i>
+
+                                <input asp-for="OrderRequest.CustomerEmail"
+                                       type="email"
+                                       placeholder="Enter your email" />
+
+                            </div>
+
+                            <span asp-validation-for="OrderRequest.CustomerEmail"
+                                  class="field-validation">
+                            </span>
+
+                        </div>
+
+
+                        <!-- QUANTITY -->
+
+                        <div class="checkout-form-group">
+
+                            <label asp-for="OrderRequest.Quantity">
+
+                                Quantity
+
+                            </label>
+
+                            <div class="input-with-icon">
+
+                                <i class="bi bi-hash"></i>
+
+                                <input asp-for="OrderRequest.Quantity"
+                                       type="number"
+                                       min="1" />
+
+                            </div>
+
+                            <span asp-validation-for="OrderRequest.Quantity"
+                                  class="field-validation">
+                            </span>
+
+                        </div>
+
+
+                        <!-- PAYMENT METHOD -->
+
+                        <div class="checkout-form-group">
+
+                            <label asp-for="PaymentMethod">
+
+                                Payment Method
+
+                            </label>
+
+                            <div class="input-with-icon select-wrapper">
+
+                                <i class="bi bi-credit-card"></i>
+
+                                <select asp-for="PaymentMethod">
+
+                                    <option value="Cash">
+                                        Cash
+                                    </option>
+
+                                    <option value="GCash">
+                                        GCash
+                                    </option>
+
+                                    <option value="Card">
+                                        Card
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- SUBMIT -->
+
+                        <button type="submit"
+                                class="checkout-submit">
+
+                            <span>
+                                Place Order
+                            </span>
+
+                            <i class="bi bi-arrow-right"></i>
+
+                        </button>
+
+
+                    </form>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</section>

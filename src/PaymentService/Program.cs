@@ -12,6 +12,8 @@ builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseSqlite(
         builder.Configuration.GetConnectionString("PaymentDb")));
 
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -20,7 +22,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseExceptionHandler();
+
+//app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
