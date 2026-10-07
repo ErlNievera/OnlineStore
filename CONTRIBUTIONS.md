@@ -26,7 +26,7 @@ Responsible for the complete backend implementation and integration between serv
 - Service-to-service integration
 - Final backend integration testing
 
-## Member 2: PimintelStefan — Storefront / UI Developer
+## Member 2: Klarence Villar — Storefront / UI Developer
 
 Responsible for the user-facing web application.
 
@@ -45,7 +45,7 @@ Responsible for the user-facing web application.
 - UI error handling
 - Navigation and basic styling
 
-## Member 3: Villarklarence — Testing / QA / Documentation
+## Member 3: Stefan Pimintel — Testing / QA / Documentation
 
 Responsible for testing, quality assurance, and project documentation.
 
