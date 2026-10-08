@@ -1,15 +1,15 @@
 ﻿using System.Net;
-using System.Net.Http.Json;
+using OrderService.Clients.Generated;
 
 namespace OrderService.Clients;
 
 public class CatalogClient
 {
-    private readonly HttpClient _httpClient;
+    private readonly ICatalogApiClient _catalogApiClient;
 
-    public CatalogClient(HttpClient httpClient)
+    public CatalogClient(ICatalogApiClient catalogApiClient)
     {
-        _httpClient = httpClient;
+        _catalogApiClient = catalogApiClient;
     }
 
     public async Task<CatalogProductResponse?> GetProductAsync(
@@ -18,27 +18,31 @@ public class CatalogClient
     {
         try
         {
-            HttpResponseMessage response = await _httpClient.GetAsync(
-                $"catalog/v1/products/{productId}",
+            Product product = await _catalogApiClient.GetProductByIdAsync(
+                productId,
                 cancellationToken);
 
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            return new CatalogProductResponse
             {
-                return null;
-            }
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new DownstreamServiceException(
-                    "Catalog Service",
-                    (int)response.StatusCode);
-            }
-
-            CatalogProductResponse? product =
-                await response.Content.ReadFromJsonAsync<CatalogProductResponse>(
-                    cancellationToken: cancellationToken);
-
-            return product;
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = (decimal)product.Price,
+                IsActive = product.IsActive,
+                CreatedAt = product.CreatedAt.DateTime,
+                UpdatedAt = product.UpdatedAt.DateTime
+            };
+        }
+        catch (ApiException<ProblemDetails> ex)
+            when (ex.StatusCode == (int)HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+        catch (ApiException ex)
+        {
+            throw new DownstreamServiceException(
+                "Catalog Service",
+                ex.StatusCode);
         }
         catch (HttpRequestException)
         {
@@ -46,7 +50,8 @@ public class CatalogClient
                 "Catalog Service",
                 StatusCodes.Status503ServiceUnavailable);
         }
-        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
         {
             throw new DownstreamServiceException(
                 "Catalog Service",

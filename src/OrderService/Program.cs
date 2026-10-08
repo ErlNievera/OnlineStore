@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http.Resilience;
 using OrderService.Clients;
+using OrderService.Clients.Generated;
 using OrderService.Data;
 using OrderService.Handlers;
 using OrderService.Messaging;
@@ -21,7 +22,8 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddTransient<CorrelationIdHandler>();
 
-builder.Services.AddHttpClient<CatalogClient>(client =>
+// Generated Catalog API Client
+builder.Services.AddHttpClient<ICatalogApiClient, CatalogApiClient>(client =>
 {
     client.BaseAddress = new Uri("http://localhost:5089/");
 })
@@ -34,6 +36,21 @@ builder.Services.AddHttpClient<CatalogClient>(client =>
     options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
 });
 
+// Generated Inventory API Client
+builder.Services.AddHttpClient<IInventoryApiClient, InventoryApiClient>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5214/");
+})
+.AddHttpMessageHandler<CorrelationIdHandler>()
+.AddStandardResilienceHandler(options =>
+{
+    options.Retry.MaxRetryAttempts = 3;
+    options.Retry.Delay = TimeSpan.FromSeconds(1);
+    options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
+});
+
+// Existing Inventory Client Adapter
 builder.Services.AddHttpClient<InventoryClient>(client =>
 {
     client.BaseAddress = new Uri("http://localhost:5214/");
@@ -57,7 +74,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 

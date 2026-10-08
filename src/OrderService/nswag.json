@@ -1,0 +1,23 @@
+{
+  "runtime": "Net90",
+  "documentGenerator": {
+    "fromDocument": {
+      "url": "../../contracts/catalog.yaml"
+    }
+  },
+  "codeGenerators": {
+    "openApiToCSharpClient": {
+      "className": "CatalogApiClient",
+      "namespace": "OrderService.Clients.Generated",
+      "generateClientClasses": true,
+      "generateClientInterfaces": true,
+      "injectHttpClient": true,
+      "disposeHttpClient": false,
+      "useHttpClientCreationMethod": false,
+      "generateOptionalParameters": false,
+      "generateDtoTypes": true,
+      "useBaseUrl": true,
+      "output": "Clients/Generated/CatalogApiClient.cs"
+    }
+  }
+}

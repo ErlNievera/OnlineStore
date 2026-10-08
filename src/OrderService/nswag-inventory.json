@@ -1,0 +1,27 @@
+{
+  "runtime": "Net90",
+  "documentGenerator": {
+    "fromDocument": {
+      "url": "../../contracts/inventory.yaml"
+    }
+  },
+  "codeGenerators": {
+    "openApiToCSharpClient": {
+      "className": "InventoryApiClient",
+      "namespace": "OrderService.Clients.Generated",
+      "generateClientClasses": true,
+      "generateClientInterfaces": true,
+      "injectHttpClient": true,
+      "disposeHttpClient": false,
+      "useHttpClientCreationMethod": false,
+      "generateOptionalParameters": false,
+      "generateDtoTypes": true,
+      "useBaseUrl": true,
+      "generateExceptionClasses": false,
+      "excludedTypeNames": [
+        "ProblemDetails"
+      ],
+      "output": "Clients/Generated/InventoryApiClient.cs"
+    }
+  }
+}
