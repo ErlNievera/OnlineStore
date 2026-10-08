@@ -6,7 +6,7 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:5001
+  - url: http://localhost:5089
 
 tags:
   - name: Products
@@ -64,8 +64,8 @@ paths:
         required: true
         description: Product ID
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
 
     get:
       tags:
@@ -140,13 +140,15 @@ components:
         - description
         - price
         - isActive
+        - createdAt
+        - updatedAt
 
       properties:
 
         id:
-          type: integer
-          format: int32
-          example: 1
+          type: string
+          format: uuid
+          example: 995128a7-1eb3-491d-9a52-124affd4a451
 
         name:
           type: string
@@ -155,7 +157,7 @@ components:
 
         description:
           type: string
-          maxLength: 1000
+          maxLength: 2000
           example: Ergonomic wireless mouse
 
         price:
@@ -166,6 +168,16 @@ components:
         isActive:
           type: boolean
           example: true
+
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-10-08T05:00:00Z
+
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2026-10-08T05:00:00Z
 
 
     CreateProductRequest:
@@ -182,16 +194,19 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+          example: Wireless Mouse
 
         description:
           type: string
           minLength: 1
-          maxLength: 1000
+          maxLength: 2000
+          example: Ergonomic wireless mouse
 
         price:
           type: number
           format: double
           minimum: 0.01
+          example: 799.99
 
 
     UpdateProductRequest:
@@ -209,19 +224,23 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+          example: Wireless Mouse
 
         description:
           type: string
           minLength: 1
-          maxLength: 1000
+          maxLength: 2000
+          example: Ergonomic wireless mouse
 
         price:
           type: number
           format: double
           minimum: 0.01
+          example: 799.99
 
         isActive:
           type: boolean
+          example: true
 
 
     ProblemDetails:
