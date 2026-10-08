@@ -1,319 +1,287 @@
-openapi: 3.0.0
+openapi: 3.0.3
+
 info:
   title: Payment Service API
-  description: Payment processing service for the online store platform
+  description: API for managing payments in the online store
   version: 1.0.0
+
 servers:
-  - url: http://localhost:5004/payment/v1
+  - url: http://localhost:5120
     description: Development server
 
+tags:
+  - name: Payments
+    description: Payment management operations
+
 paths:
-  /payments:
+
+  /payments/v1/payments:
+
     get:
-      operationId: listPayments
-      summary: List all payments
       tags:
         - Payments
-      parameters:
-        - name: X-Correlation-ID
-          in: header
-          description: Correlation ID for tracing requests
-          schema:
-            type: string
-            format: uuid
+      operationId: getPayments
+      summary: Get all payments
+
       responses:
         '200':
-          description: List of payments retrieved successfully
+          description: Payments retrieved successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Payment'
-        '500':
-          description: Internal server error
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
+                  $ref: '#/components/schemas/PaymentResponse'
+
 
     post:
-      operationId: createPayment
-      summary: Create a new payment
       tags:
         - Payments
-      parameters:
-        - name: X-Correlation-ID
-          in: header
-          description: Correlation ID for tracing requests
-          schema:
-            type: string
-            format: uuid
+      operationId: createPayment
+      summary: Create a new payment
+
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreatePaymentRequest'
+
       responses:
         '201':
           description: Payment created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Payment'
-        '400':
-          description: Invalid request
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '402':
-          description: Payment declined
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal server error
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
+                $ref: '#/components/schemas/PaymentResponse'
 
-  /payments/{id}:
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /payments/v1/payments/{id}:
+
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Payment ID
+        schema:
+          type: string
+          format: uuid
+
     get:
-      operationId: getPaymentById
-      summary: Get a payment by ID
       tags:
         - Payments
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Payment ID
-          schema:
-            type: integer
-            format: int32
-        - name: X-Correlation-ID
-          in: header
-          description: Correlation ID for tracing requests
-          schema:
-            type: string
-            format: uuid
+      operationId: getPaymentById
+      summary: Get a payment by ID
+
       responses:
         '200':
-          description: Payment retrieved successfully
+          description: Payment found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Payment'
-        '404':
-          description: Payment not found
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal server error
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
+                $ref: '#/components/schemas/PaymentResponse'
 
-    delete:
-      operationId: deletePayment
-      summary: Delete a payment record
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+
+    put:
       tags:
         - Payments
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Payment ID
-          schema:
-            type: integer
-            format: int32
-        - name: X-Correlation-ID
-          in: header
-          description: Correlation ID for tracing requests
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Payment deleted successfully
-        '404':
-          description: Payment not found
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal server error
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
+      operationId: updatePayment
+      summary: Update a payment
 
-  /payments/{id}/refund:
-    post:
-      operationId: refundPayment
-      summary: Refund a payment
-      tags:
-        - Payments
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Payment ID
-          schema:
-            type: integer
-            format: int32
-        - name: X-Correlation-ID
-          in: header
-          description: Correlation ID for tracing requests
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RefundRequest'
+              $ref: '#/components/schemas/UpdatePaymentRequest'
+
       responses:
         '200':
-          description: Payment refunded successfully
+          description: Payment updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Payment'
-        '400':
-          description: Invalid request
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
+                $ref: '#/components/schemas/PaymentResponse'
+
         '404':
-          description: Payment not found
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal server error
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
+          $ref: '#/components/responses/NotFound'
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+
+    delete:
+      tags:
+        - Payments
+      operationId: deletePayment
+      summary: Delete a payment
+
+      responses:
+        '204':
+          description: Payment deleted successfully
+
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 
 components:
+
   schemas:
-    Payment:
+
+    PaymentResponse:
       type: object
       required:
         - id
         - orderId
         - amount
         - status
+        - paymentMethod
         - createdAt
+        - updatedAt
+
       properties:
+
         id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
           description: Payment ID
+          example: 7e5a5f1b-0b91-4a4e-8f6e-8f5d4f5a7e31
+
         orderId:
-          type: integer
-          format: int32
-          description: Associated Order ID
+          type: string
+          format: uuid
+          description: ID of the associated order
+          example: 5d8b2f31-8d4d-4f5d-9a2b-123456789abc
+
         amount:
           type: number
-          format: decimal
+          format: double
           description: Payment amount
+          example: 1599.98
+
         status:
           type: string
-          enum:
-            - Pending
-            - Completed
-            - Refunded
-            - Failed
-          description: Payment status
+          description: Current payment status
+          example: Pending
+
+        paymentMethod:
+          type: string
+          description: Payment method used
+          example: GCash
+
         createdAt:
           type: string
           format: date-time
           description: When the payment was created
+
         updatedAt:
           type: string
           format: date-time
-          nullable: true
           description: When the payment was last updated
+
 
     CreatePaymentRequest:
       type: object
       required:
         - orderId
         - amount
+        - paymentMethod
+
       properties:
+
         orderId:
-          type: integer
-          format: int32
-          description: Order ID to pay for
+          type: string
+          format: uuid
+          description: ID of the order being paid
+          example: 5d8b2f31-8d4d-4f5d-9a2b-123456789abc
+
         amount:
           type: number
-          format: decimal
+          format: double
           minimum: 0.01
           description: Payment amount
-        cardNumber:
-          type: string
-          pattern: '^\\d{16}$'
-          description: Card number (16 digits)
-        cardHolder:
-          type: string
-          description: Card holder name
-        expiryDate:
-          type: string
-          pattern: '^\\d{2}\\/\\d{2}$'
-          description: Expiry date (MM/YY)
-        cvv:
-          type: string
-          pattern: '^\\d{3,4}$'
-          description: CVV
+          example: 1599.98
 
-    RefundRequest:
+        paymentMethod:
+          type: string
+          description: Payment method
+          example: GCash
+
+
+    UpdatePaymentRequest:
       type: object
       required:
         - amount
+        - status
+        - paymentMethod
+
       properties:
+
         amount:
           type: number
-          format: decimal
+          format: double
           minimum: 0.01
-          description: Amount to refund
-        reason:
+          description: Updated payment amount
+          example: 1599.98
+
+        status:
           type: string
-          description: Reason for refund
+          description: Updated payment status
+          example: Completed
+
+        paymentMethod:
+          type: string
+          description: Updated payment method
+          example: GCash
+
 
     ProblemDetails:
       type: object
-      required:
-        - type
-        - title
-        - status
       properties:
+
         type:
           type: string
+          nullable: true
           description: A URI reference to the problem type
+
         title:
           type: string
-          description: A short, human-readable summary of the problem
+          nullable: true
+          description: A short description of the problem
+
         status:
           type: integer
-          format: int32
-          description: The HTTP status code
+          nullable: true
+          description: HTTP status code
+
         detail:
           type: string
-          description: A human-readable explanation specific to this occurrence
+          nullable: true
+          description: Detailed explanation of the problem
+
         instance:
           type: string
-          description: A URI reference that identifies the specific occurrence
+          nullable: true
+          description: URI identifying the specific occurrence
+
+
+  responses:
+
+    BadRequest:
+      description: The request was invalid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    NotFound:
+      description: The requested payment was not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
