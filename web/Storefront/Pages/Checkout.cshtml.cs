@@ -8,21 +8,15 @@ namespace Storefront.Pages;
 public class CheckoutModel : PageModel
 {
     private readonly OrderApiClient _orderApiClient;
-    private readonly PaymentApiClient _paymentApiClient;
+    private readonly InventoryApiClient _inventoryApiClient;
 
     public CheckoutModel(
         OrderApiClient orderApiClient,
-        PaymentApiClient paymentApiClient)
+        InventoryApiClient inventoryApiClient)
     {
         _orderApiClient = orderApiClient;
-        _paymentApiClient = paymentApiClient;
+        _inventoryApiClient = inventoryApiClient;
     }
-
-    [BindProperty]
-    public CreateOrderRequest OrderRequest { get; set; } = new();
-
-    [BindProperty]
-    public string PaymentMethod { get; set; } = "Cash";
 
     [BindProperty(SupportsGet = true)]
     public Guid ProductId { get; set; }
@@ -33,62 +27,114 @@ public class CheckoutModel : PageModel
     [BindProperty(SupportsGet = true)]
     public decimal Price { get; set; }
 
-    public string Message { get; private set; } = string.Empty;
+    [BindProperty]
+    public string CustomerName { get; set; } = string.Empty;
 
-    public void OnGet()
+    [BindProperty]
+    public string CustomerEmail { get; set; } = string.Empty;
+
+    [BindProperty]
+    public int Quantity { get; set; } = 1;
+
+    public int AvailableQuantity { get; private set; }
+
+    public string ErrorMessage { get; private set; } = string.Empty;
+
+    public async Task<IActionResult> OnGetAsync()
     {
-        OrderRequest.ProductId = ProductId;
-        OrderRequest.Quantity = 1;
-        OrderRequest.TotalAmount = Price;
+        await LoadInventoryAsync();
+
+        if (AvailableQuantity <= 0)
+        {
+            ErrorMessage = "This product is currently out of stock.";
+        }
+
+        return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        // Make sure ProductId is included in the order request
-        OrderRequest.ProductId = ProductId;
+        await LoadInventoryAsync();
 
-        // Calculate total based on quantity
-        OrderRequest.TotalAmount = Price * OrderRequest.Quantity;
-
-        // Remove automatic validation for TotalAmount
-        // because we calculate it on the server
-        ModelState.Remove("OrderRequest.TotalAmount");
-
-        if (!ModelState.IsValid)
+        if (AvailableQuantity <= 0)
         {
+            ErrorMessage = "This product is currently out of stock.";
+            return Page();
+        }
+
+        if (Quantity < 1)
+        {
+            ErrorMessage = "Quantity must be at least 1.";
+            return Page();
+        }
+
+        if (Quantity > AvailableQuantity)
+        {
+            ErrorMessage =
+                $"Only {AvailableQuantity} item(s) are available.";
+
+            return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(CustomerName))
+        {
+            ErrorMessage = "Customer name is required.";
+            return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(CustomerEmail))
+        {
+            ErrorMessage = "Customer email is required.";
+            return Page();
+        }
+
+        if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute()
+                .IsValid(CustomerEmail))
+        {
+            ErrorMessage = "Please enter a valid email address.";
             return Page();
         }
 
         try
         {
-            // 1. Create the order
-            OrderResultDto orderResult =
-                await _orderApiClient.CreateOrderAsync(OrderRequest);
+            decimal totalAmount = Price * Quantity;
 
-            // 2. Create the payment
-            CreatePaymentRequest paymentRequest = new CreatePaymentRequest
+            CreateOrderRequest request = new CreateOrderRequest
             {
-                OrderId = orderResult.Id,
-                Amount = OrderRequest.TotalAmount,
-                PaymentMethod = PaymentMethod
+                ProductId = ProductId,
+                CustomerName = CustomerName,
+                CustomerEmail = CustomerEmail,
+                Quantity = Quantity,
+                TotalAmount = totalAmount
             };
 
-            PaymentResultDto paymentResult =
-                await _paymentApiClient.CreatePaymentAsync(paymentRequest);
+            OrderResultDto order =
+                await _orderApiClient.CreateOrderAsync(request);
 
-            // 3. Show success message
-            Message =
-                $"Order created successfully. " +
-                $"Order ID: {orderResult.Id}, " +
-                $"Payment ID: {paymentResult.Id}, " +
-                $"Payment Status: {paymentResult.Status}";
-
-            return Page();
+            return RedirectToPage(
+                "/OrderConfirmation",
+                new
+                {
+                    orderId = order.Id
+                });
         }
         catch (Exception ex)
         {
-            Message = ex.Message;
+            ErrorMessage = ex.Message;
             return Page();
         }
+    }
+
+    private async Task LoadInventoryAsync()
+    {
+        List<InventoryItemDto> inventoryItems =
+            await _inventoryApiClient.GetItemsAsync();
+
+        InventoryItemDto? inventory =
+            inventoryItems.FirstOrDefault(
+                x => x.ProductId == ProductId);
+
+        AvailableQuantity =
+            inventory?.AvailableQuantity ?? 0;
     }
 }

@@ -1,0 +1,69 @@
+﻿@page
+@model Storefront.Pages.OrderConfirmationModel
+
+@{
+    ViewData["Title"] = "Order Confirmation";
+}
+
+<section class="confirmation-section">
+    <div class="confirmation-card">
+
+        <div class="confirmation-icon">
+            <i class="bi bi-check-lg"></i>
+        </div>
+
+        <span class="confirmation-label">
+            ORDER SUCCESSFUL
+        </span>
+
+        <h1>Thank You for Your Order!</h1>
+
+        <p class="confirmation-message">
+            Your order has been successfully placed.
+        </p>
+
+        @if (Model.Order is not null)
+        {
+            <div class="order-details">
+
+                <div class="order-detail">
+                    <span>Order ID</span>
+                    <strong>@Model.Order.Id</strong>
+                </div>
+
+                <div class="order-detail">
+                    <span>Product ID</span>
+                    <strong>@Model.Order.ProductId</strong>
+                </div>
+
+                <div class="order-detail">
+                    <span>Quantity</span>
+                    <strong>@Model.Order.Quantity</strong>
+                </div>
+
+                <div class="order-detail">
+                    <span>Total Amount</span>
+                    <strong>
+                        ₱@Model.Order.TotalAmount.ToString("N2")
+                    </strong>
+                </div>
+
+                <div class="order-detail">
+                    <span>Status</span>
+                    <strong class="order-status">
+                        @Model.Order.Status
+                    </strong>
+                </div>
+
+            </div>
+        }
+
+        <div class="confirmation-actions">
+            <a asp-page="/Index" class="confirmation-button">
+                Continue Shopping
+                <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+    </div>
+</section>

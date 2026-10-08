@@ -167,7 +167,7 @@ public class OrdersController : ControllerBase
             ProductId = request.ProductId,
             CustomerName = request.CustomerName,
             CustomerEmail = request.CustomerEmail,
-            TotalAmount = request.TotalAmount,
+            TotalAmount = product.Price * request.Quantity,
             Status = "Pending",
             CreatedAt = now,
             UpdatedAt = now

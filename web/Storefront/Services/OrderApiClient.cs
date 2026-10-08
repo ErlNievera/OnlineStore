@@ -1,4 +1,6 @@
-﻿using Storefront.Models;
+﻿using System.Net;
+using System.Net.Http.Json;
+using Storefront.Models;
 
 namespace Storefront.Services;
 
@@ -11,16 +13,43 @@ public class OrderApiClient
         _httpClient = httpClient;
     }
 
-    public async Task<OrderResultDto> CreateOrderAsync(CreateOrderRequest request)
+    public async Task<OrderResultDto> CreateOrderAsync(
+        CreateOrderRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync("/orders/v1/orders", request);
+        HttpResponseMessage response =
+            await _httpClient.PostAsJsonAsync(
+                "/orders/v1/orders",
+                request);
+
         if (!response.IsSuccessStatusCode)
         {
-            var error = await response.Content.ReadAsStringAsync();
-            throw new InvalidOperationException($"Order failed: {error}");
+            string error =
+                await response.Content.ReadAsStringAsync();
+
+            throw new InvalidOperationException(
+                $"Order failed: {error}");
         }
 
-        return await response.Content.ReadFromJsonAsync<OrderResultDto>()
-            ?? throw new InvalidOperationException("Order response was empty.");
+        return await response.Content
+            .ReadFromJsonAsync<OrderResultDto>()
+            ?? throw new InvalidOperationException(
+                "Order response was empty.");
+    }
+
+    public async Task<OrderResultDto?> GetOrderAsync(Guid orderId)
+    {
+        HttpResponseMessage response =
+            await _httpClient.GetAsync(
+                $"/orders/v1/orders/{orderId}");
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content
+            .ReadFromJsonAsync<OrderResultDto>();
     }
 }

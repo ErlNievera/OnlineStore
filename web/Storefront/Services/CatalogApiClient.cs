@@ -1,4 +1,6 @@
-﻿using Storefront.Models;
+﻿using System.Net;
+using System.Net.Http.Json;
+using Storefront.Models;
 
 namespace Storefront.Services;
 
@@ -13,9 +15,28 @@ public class CatalogApiClient
 
     public async Task<List<ProductDto>> GetProductsAsync()
     {
-        var response = await _httpClient.GetAsync("/catalog/v1/products");
+        HttpResponseMessage response =
+            await _httpClient.GetAsync("/catalog/v1/products");
+
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<List<ProductDto>>() ?? new List<ProductDto>();
+        return await response.Content.ReadFromJsonAsync<List<ProductDto>>()
+            ?? new List<ProductDto>();
+    }
+
+    public async Task<ProductDto?> GetProductAsync(Guid id)
+    {
+        HttpResponseMessage response =
+            await _httpClient.GetAsync(
+                $"/catalog/v1/products/{id}");
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<ProductDto>();
     }
 }

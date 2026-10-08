@@ -16,7 +16,4 @@ public class CreateOrderRequest
 
     [Range(1, 100)]
     public int Quantity { get; set; }
-
-    [Range(0.01, double.MaxValue)]
-    public decimal TotalAmount { get; set; }
 }

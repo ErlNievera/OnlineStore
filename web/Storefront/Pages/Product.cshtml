@@ -1,0 +1,194 @@
+﻿@page
+@model Storefront.Pages.ProductModel
+
+@{
+    ViewData["Title"] = Model.Product?.Name ?? "Product";
+}
+
+<section class="product-details-section">
+
+    <div class="container">
+
+        <div class="product-details-wrapper">
+
+            <!-- Back Button -->
+
+            <div class="product-details-back">
+
+                <a asp-page="/Index">
+
+                    <i class="bi bi-arrow-left"></i>
+
+                    Back to Products
+
+                </a>
+
+            </div>
+
+
+            @if (Model.Product is not null)
+            {
+                <div class="row g-5 align-items-center">
+
+                    <!-- Product Icon -->
+
+                    <div class="col-md-5">
+
+                        <div class="product-details-image">
+
+                            <i class="bi bi-bag"></i>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Product Information -->
+
+                    <div class="col-md-7">
+
+                        <span class="section-label">
+                            PRODUCT
+                        </span>
+
+                        <h1 class="product-details-name">
+                            @Model.Product.Name
+                        </h1>
+
+                        <p class="product-details-description">
+                            @Model.Product.Description
+                        </p>
+
+
+                        <!-- Price -->
+
+                        <div class="product-details-price">
+
+                            @Model.Product.Price.ToString("C")
+
+                        </div>
+
+
+                        <!-- Stock -->
+
+                        <div class="product-details-stock">
+
+                            @if (Model.Inventory is null)
+                            {
+                                <span class="stock-status unavailable">
+
+                                    <i class="bi bi-exclamation-circle"></i>
+
+                                    Stock information unavailable
+
+                                </span>
+                            }
+                            else if (Model.Inventory.AvailableQuantity <= 0)
+                            {
+                                <span class="stock-status unavailable">
+
+                                    <i class="bi bi-x-circle"></i>
+
+                                    Out of stock
+
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="stock-status available">
+
+                                    <i class="bi bi-check-circle-fill"></i>
+
+                                    @Model.Inventory.AvailableQuantity available
+
+                                </span>
+                            }
+
+                        </div>
+
+
+                        <!-- Buy Button -->
+
+                        <div class="product-details-action">
+
+                            @if (Model.Inventory is not null &&
+                                                    Model.Inventory.AvailableQuantity > 0)
+                            {
+                                <a class="buy-button"
+                                   asp-page="/Checkout"
+                                   asp-route-productId="@Model.Product.Id"
+                                   asp-route-productName="@Model.Product.Name"
+                                   asp-route-price="@Model.Product.Price">
+
+                                    Buy Now
+
+                                    <i class="bi bi-arrow-right"></i>
+
+                                </a>
+                            }
+                            else
+                            {
+                                <button class="buy-button disabled-button"
+                                        disabled>
+
+                                    Out of Stock
+
+                                </button>
+                            }
+
+                        </div>
+
+
+                        <!-- Product Information -->
+
+                        <div class="product-meta">
+
+                            <div class="product-meta-item">
+
+                                <i class="bi bi-shield-check"></i>
+
+                                <div>
+
+                                    <strong>
+                                        Reliable Shopping
+                                    </strong>
+
+                                    <span>
+                                        Your order is processed through our backend services.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="product-meta-item">
+
+                                <i class="bi bi-box-seam"></i>
+
+                                <div>
+
+                                    <strong>
+                                        Live Stock
+                                    </strong>
+
+                                    <span>
+                                        Stock availability is checked before ordering.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</section>
