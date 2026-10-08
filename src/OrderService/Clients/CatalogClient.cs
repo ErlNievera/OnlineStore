@@ -16,18 +16,41 @@ public class CatalogClient
         Guid productId,
         CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync(
-            $"catalog/v1/products/{productId}",
-            cancellationToken);
-
-        if (response.StatusCode == HttpStatusCode.NotFound)
+        try
         {
-            return null;
+            HttpResponseMessage response = await _httpClient.GetAsync(
+                $"catalog/v1/products/{productId}",
+                cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new DownstreamServiceException(
+                    "Catalog Service",
+                    (int)response.StatusCode);
+            }
+
+            CatalogProductResponse? product =
+                await response.Content.ReadFromJsonAsync<CatalogProductResponse>(
+                    cancellationToken: cancellationToken);
+
+            return product;
         }
-
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<CatalogProductResponse>(
-            cancellationToken: cancellationToken);
+        catch (HttpRequestException)
+        {
+            throw new DownstreamServiceException(
+                "Catalog Service",
+                StatusCodes.Status503ServiceUnavailable);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new DownstreamServiceException(
+                "Catalog Service",
+                StatusCodes.Status504GatewayTimeout);
+        }
     }
 }

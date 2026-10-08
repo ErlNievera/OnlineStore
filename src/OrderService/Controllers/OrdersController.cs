@@ -78,9 +78,26 @@ public class OrdersController : ControllerBase
         CancellationToken cancellationToken)
     {
         // 1. Validate product through CatalogService
-        CatalogProductResponse? product = await _catalogClient.GetProductAsync(
-            request.ProductId,
-            cancellationToken);
+        CatalogProductResponse? product;
+
+        try
+        {
+            product = await _catalogClient.GetProductAsync(
+                request.ProductId,
+                cancellationToken);
+        }
+        catch (DownstreamServiceException ex)
+        {
+            return StatusCode(
+                ex.StatusCode,
+                new ProblemDetails
+                {
+                    Status = ex.StatusCode,
+                    Title = $"{ex.ServiceName} unavailable",
+                    Detail =
+                        $"The {ex.ServiceName} could not be reached or returned an error."
+                });
+        }
 
         if (product is null)
         {
@@ -115,10 +132,26 @@ public class OrdersController : ControllerBase
         }
 
         // 4. Find inventory using ProductId
-        InventoryItemResponse? inventory =
-            await _inventoryClient.GetInventoryByProductIdAsync(
+        InventoryItemResponse? inventory;
+
+        try
+        {
+            inventory = await _inventoryClient.GetInventoryByProductIdAsync(
                 request.ProductId,
                 cancellationToken);
+        }
+        catch (DownstreamServiceException ex)
+        {
+            return StatusCode(
+                ex.StatusCode,
+                new ProblemDetails
+                {
+                    Status = ex.StatusCode,
+                    Title = $"{ex.ServiceName} unavailable",
+                    Detail =
+                        $"The {ex.ServiceName} could not be reached or returned an error."
+                });
+        }
 
         if (inventory is null)
         {
@@ -126,7 +159,8 @@ public class OrdersController : ControllerBase
             {
                 Status = StatusCodes.Status404NotFound,
                 Title = "Inventory not found",
-                Detail = $"No inventory item was found for product '{request.ProductId}'."
+                Detail =
+                    $"No inventory item was found for product '{request.ProductId}'."
             });
         }
 
@@ -143,10 +177,27 @@ public class OrdersController : ControllerBase
         }
 
         // 6. Reserve inventory
-        bool stockReserved = await _inventoryClient.ReserveStockAsync(
-            inventory.Id,
-            request.Quantity,
-            cancellationToken);
+        bool stockReserved;
+
+        try
+        {
+            stockReserved = await _inventoryClient.ReserveStockAsync(
+                inventory.Id,
+                request.Quantity,
+                cancellationToken);
+        }
+        catch (DownstreamServiceException ex)
+        {
+            return StatusCode(
+                ex.StatusCode,
+                new ProblemDetails
+                {
+                    Status = ex.StatusCode,
+                    Title = $"{ex.ServiceName} unavailable",
+                    Detail =
+                        $"The {ex.ServiceName} could not be reached or returned an error."
+                });
+        }
 
         if (!stockReserved)
         {
