@@ -1,35 +1,56 @@
 # Visual Studio
 .vs/
-.vscode/
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# JetBrains Rider
+.idea/
 
 # Build output
 **/bin/
 **/obj/
+[Dd]ebug/
+[Rr]elease/
 
 # NuGet
 packages/
+*.nupkg
 
 # Test results
 TestResults/
+*.trx
+coverage/
 
-# Rider
-.idea/
-
-# Local databases
+# SQLite databases and temporary files
 *.db
+*.db3
+*.sqlite
+*.sqlite3
 *.db-shm
 *.db-wal
+*.sqlite-shm
+*.sqlite-wal
 
-# User secrets / local configuration
+# Local configuration
 appsettings.Local.json
 appsettings.*.local.json
-
-# Environment files
 .env
 .env.*
 
-# OS files
+# User secrets and certificates
+secrets.json
+*.pfx
+*.p12
+
+# Logs
+*.log
+
+# Operating system files
 .DS_Store
 Thumbs.db
+desktop.ini
