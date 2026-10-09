@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿
+using System.Text;
 using System.Text.Json;
 using RabbitMQ.Client;
 using Shared.Events;
@@ -18,28 +19,31 @@ public class RabbitMqPublisher
         OrderPlaced orderPlaced,
         CancellationToken cancellationToken = default)
     {
-        var hostName =
+        string hostName =
             _configuration["RabbitMQ:HostName"] ?? "localhost";
 
-        var userName =
+        string userName =
             _configuration["RabbitMQ:UserName"] ?? "guest";
 
-        var password =
+        string password =
             _configuration["RabbitMQ:Password"] ?? "guest";
 
-        var factory = new ConnectionFactory
+        ConnectionFactory factory = new ConnectionFactory
         {
             HostName = hostName,
             UserName = userName,
             Password = password
         };
 
-        await using var connection =
+        await using IConnection connection =
             await factory.CreateConnectionAsync(cancellationToken);
 
-        await using var channel =
+        await using IChannel channel =
             await connection.CreateChannelAsync(
-                cancellationToken: cancellationToken);
+                new CreateChannelOptions(
+                    publisherConfirmationsEnabled: true,
+                    publisherConfirmationTrackingEnabled: true),
+                cancellationToken);
 
         await channel.ExchangeDeclareAsync(
             exchange: "orders",
@@ -61,10 +65,10 @@ public class RabbitMqPublisher
             routingKey: "order.placed",
             cancellationToken: cancellationToken);
 
-        var json = JsonSerializer.Serialize(orderPlaced);
-        var body = Encoding.UTF8.GetBytes(json);
+        string json = JsonSerializer.Serialize(orderPlaced);
+        byte[] body = Encoding.UTF8.GetBytes(json);
 
-        var properties = new BasicProperties
+        BasicProperties properties = new BasicProperties
         {
             Persistent = true,
             ContentType = "application/json",

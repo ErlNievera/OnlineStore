@@ -159,33 +159,7 @@ public class OrdersController : ControllerBase
                 Detail =
                     $"Only {inventory.AvailableQuantity} item(s) are currently available."
             });
-        }
-
-        // 6. Reserve inventory
-        bool stockReserved;
-
-        try
-        {
-            stockReserved = await _inventoryClient.ReserveStockAsync(
-                inventory.Id,
-                request.Quantity,
-                cancellationToken);
-        }
-        catch (DownstreamServiceException ex)
-        {
-            return CreateDownstreamError(ex);
-        }
-
-        if (!stockReserved)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Unable to reserve inventory",
-                Detail =
-                    "The requested inventory could not be reserved. Stock may have changed; please try again."
-            });
-        }
+        } 
 
         // 7. Create order
         DateTime now = DateTime.UtcNow;
@@ -219,11 +193,27 @@ public class OrdersController : ControllerBase
             now,
             correlationId);
 
-        // 10. RabbitMQ publishing will be enabled later
-        // Keep this commented until the event-driven workflow is configured.
-        // await _rabbitMqPublisher.PublishOrderPlacedAsync(
-        //     orderPlaced,
-        //     cancellationToken);
+        try
+        {
+            await _rabbitMqPublisher.PublishOrderPlacedAsync(
+                orderPlaced,
+                cancellationToken);
+        }
+        catch (Exception)
+        {
+            order.Status = "Pending";
+            await _db.SaveChangesAsync(cancellationToken);
+
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ProblemDetails
+                {
+                    Status = StatusCodes.Status503ServiceUnavailable,
+                    Title = "Order event publishing failed",
+                    Detail =
+                        "The order was saved, but the event could not be published. Check RabbitMQ and try again."
+                });
+        }
 
         // 11. Return created order
         return CreatedAtAction(

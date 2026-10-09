@@ -17,8 +17,8 @@ builder.Services.AddDbContext<InventoryDbContext>(options =>
 builder.Services.AddProblemDetails();
 
 // RabbitMQ consumer
-//builder.Services.AddScoped<OrderPlacedConsumer>();
-//builder.Services.AddHostedService<RabbitMqConsumerService>();
+builder.Services.AddScoped<OrderPlacedConsumer>();
+builder.Services.AddHostedService<RabbitMqConsumerService>();
 
 var app = builder.Build();
 

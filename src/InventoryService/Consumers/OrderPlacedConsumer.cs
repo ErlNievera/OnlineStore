@@ -1,5 +1,7 @@
-﻿using System.Text.Json;
+﻿
+using System.Text.Json;
 using InventoryService.Data;
+using InventoryService.Models;
 using Microsoft.EntityFrameworkCore;
 using Shared.Events;
 
@@ -8,37 +10,51 @@ namespace InventoryService.Consumers;
 public class OrderPlacedConsumer
 {
     private readonly InventoryDbContext _db;
+    private readonly ILogger<OrderPlacedConsumer> _logger;
 
-    public OrderPlacedConsumer(InventoryDbContext db)
+    public OrderPlacedConsumer(
+        InventoryDbContext db,
+        ILogger<OrderPlacedConsumer> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task HandleAsync(
         string message,
         CancellationToken cancellationToken = default)
     {
-        var orderPlaced = JsonSerializer.Deserialize<OrderPlaced>(message);
+        OrderPlaced? orderPlaced =
+            JsonSerializer.Deserialize<OrderPlaced>(message);
 
-        if (orderPlaced is null)
+        if (orderPlaced is null ||
+            orderPlaced.OrderId == Guid.Empty ||
+            orderPlaced.ProductId == Guid.Empty ||
+            orderPlaced.Quantity <= 0)
         {
             throw new InvalidOperationException(
                 "Invalid OrderPlaced event.");
         }
 
-        // Check if this event was already processed
-        var alreadyProcessed = await _db.ProcessedEvents
+        await using var transaction =
+            await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        bool alreadyProcessed = await _db.ProcessedEvents
             .AnyAsync(
                 x => x.EventId == orderPlaced.OrderId,
                 cancellationToken);
 
         if (alreadyProcessed)
         {
+            _logger.LogInformation(
+                "Order event {OrderId} was already processed.",
+                orderPlaced.OrderId);
+
+            await transaction.CommitAsync(cancellationToken);
             return;
         }
 
-        // Find inventory for the product
-        var inventory = await _db.InventoryItems
+        InventoryItem? inventory = await _db.InventoryItems
             .FirstOrDefaultAsync(
                 x => x.ProductId == orderPlaced.ProductId,
                 cancellationToken);
@@ -49,21 +65,19 @@ public class OrderPlacedConsumer
                 $"No inventory item found for product '{orderPlaced.ProductId}'.");
         }
 
-        // Check available stock
-        if (inventory.AvailableQuantity < orderPlaced.Quantity)
+        int availableQuantity =
+            inventory.Quantity - inventory.ReservedQuantity;
+
+        if (availableQuantity < orderPlaced.Quantity)
         {
             throw new InvalidOperationException(
                 $"Insufficient stock for product '{orderPlaced.ProductId}'.");
         }
 
-        // Reserve stock
         inventory.ReservedQuantity += orderPlaced.Quantity;
-
-        // Available = Quantity - Reserved
         inventory.UpdatedAt = DateTime.UtcNow;
 
-        // Remember that this event was processed
-        _db.ProcessedEvents.Add(new Models.ProcessedEvent
+        _db.ProcessedEvents.Add(new ProcessedEvent
         {
             Id = Guid.NewGuid(),
             EventId = orderPlaced.OrderId,
@@ -71,5 +85,11 @@ public class OrderPlacedConsumer
         });
 
         await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Reserved {Quantity} units for order {OrderId}.",
+            orderPlaced.Quantity,
+            orderPlaced.OrderId);
     }
 }
