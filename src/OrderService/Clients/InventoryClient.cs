@@ -1,15 +1,20 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using OrderService.Clients.Generated;
 
 namespace OrderService.Clients;
 
 public class InventoryClient
 {
     private readonly HttpClient _httpClient;
+    private readonly IInventoryApiClient _inventoryApiClient;
 
-    public InventoryClient(HttpClient httpClient)
+    public InventoryClient(
+        HttpClient httpClient,
+        IInventoryApiClient inventoryApiClient)
     {
         _httpClient = httpClient;
+        _inventoryApiClient = inventoryApiClient;
     }
 
     public async Task<InventoryItemResponse?> GetInventoryByProductIdAsync(
@@ -18,22 +23,35 @@ public class InventoryClient
     {
         try
         {
-            HttpResponseMessage response = await _httpClient.GetAsync(
-                "inventory/v1/items",
-                cancellationToken);
+            ICollection<OrderService.Clients.Generated.InventoryItemResponse> items =
+                await _inventoryApiClient.GetInventoryItemsAsync(
+                    cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            OrderService.Clients.Generated.InventoryItemResponse? item =
+                items.FirstOrDefault(
+                    inventoryItem => inventoryItem.ProductId == productId);
+
+            if (item is null)
             {
-                throw new DownstreamServiceException(
-                    "Inventory Service",
-                    (int)response.StatusCode);
+                return null;
             }
 
-            List<InventoryItemResponse>? items =
-                await response.Content.ReadFromJsonAsync<List<InventoryItemResponse>>(
-                    cancellationToken: cancellationToken);
-
-            return items?.FirstOrDefault(x => x.ProductId == productId);
+            return new InventoryItemResponse
+            {
+                Id = item.Id,
+                ProductId = item.ProductId,
+                Quantity = item.Quantity,
+                ReservedQuantity = item.ReservedQuantity,
+                AvailableQuantity = item.AvailableQuantity,
+                CreatedAt = item.CreatedAt.DateTime,
+                UpdatedAt = item.UpdatedAt.DateTime
+            };
+        }
+        catch (ApiException ex)
+        {
+            throw new DownstreamServiceException(
+                "Inventory Service",
+                ex.StatusCode);
         }
         catch (HttpRequestException)
         {
@@ -41,7 +59,8 @@ public class InventoryClient
                 "Inventory Service",
                 StatusCodes.Status503ServiceUnavailable);
         }
-        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
         {
             throw new DownstreamServiceException(
                 "Inventory Service",
@@ -56,17 +75,29 @@ public class InventoryClient
     {
         try
         {
-            var request = new
-            {
-                Quantity = quantity
-            };
-
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
                 $"inventory/v1/items/{inventoryItemId}/reserve",
-                request,
+                new { Quantity = quantity },
                 cancellationToken);
 
-            return response.IsSuccessStatusCode;
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            if ((int)response.StatusCode >= 400 &&
+                (int)response.StatusCode < 500)
+            {
+                return false;
+            }
+
+            throw new DownstreamServiceException(
+                "Inventory Service",
+                (int)response.StatusCode);
+        }
+        catch (DownstreamServiceException)
+        {
+            throw;
         }
         catch (HttpRequestException)
         {
@@ -74,7 +105,8 @@ public class InventoryClient
                 "Inventory Service",
                 StatusCodes.Status503ServiceUnavailable);
         }
-        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
         {
             throw new DownstreamServiceException(
                 "Inventory Service",
@@ -89,17 +121,29 @@ public class InventoryClient
     {
         try
         {
-            var request = new
-            {
-                Quantity = quantity
-            };
-
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
                 $"inventory/v1/items/{inventoryItemId}/release",
-                request,
+                new { Quantity = quantity },
                 cancellationToken);
 
-            return response.IsSuccessStatusCode;
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            if ((int)response.StatusCode >= 400 &&
+                (int)response.StatusCode < 500)
+            {
+                return false;
+            }
+
+            throw new DownstreamServiceException(
+                "Inventory Service",
+                (int)response.StatusCode);
+        }
+        catch (DownstreamServiceException)
+        {
+            throw;
         }
         catch (HttpRequestException)
         {
@@ -107,7 +151,8 @@ public class InventoryClient
                 "Inventory Service",
                 StatusCodes.Status503ServiceUnavailable);
         }
-        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
         {
             throw new DownstreamServiceException(
                 "Inventory Service",
