@@ -35,6 +35,7 @@ builder.Services.AddHttpClient<ICatalogApiClient, CatalogApiClient>(client =>
     options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
     options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
 });
+builder.Services.AddScoped<CatalogClient>();
 
 // Generated Inventory API Client
 builder.Services.AddHttpClient<IInventoryApiClient, InventoryApiClient>(client =>

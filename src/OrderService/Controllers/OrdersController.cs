@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrderService.Clients;
 using OrderService.Data;
@@ -88,15 +89,7 @@ public class OrdersController : ControllerBase
         }
         catch (DownstreamServiceException ex)
         {
-            return StatusCode(
-                ex.StatusCode,
-                new ProblemDetails
-                {
-                    Status = ex.StatusCode,
-                    Title = $"{ex.ServiceName} unavailable",
-                    Detail =
-                        $"The {ex.ServiceName} could not be reached or returned an error."
-                });
+            return CreateDownstreamError(ex);
         }
 
         if (product is null)
@@ -142,15 +135,7 @@ public class OrdersController : ControllerBase
         }
         catch (DownstreamServiceException ex)
         {
-            return StatusCode(
-                ex.StatusCode,
-                new ProblemDetails
-                {
-                    Status = ex.StatusCode,
-                    Title = $"{ex.ServiceName} unavailable",
-                    Detail =
-                        $"The {ex.ServiceName} could not be reached or returned an error."
-                });
+            return CreateDownstreamError(ex);
         }
 
         if (inventory is null)
@@ -188,15 +173,7 @@ public class OrdersController : ControllerBase
         }
         catch (DownstreamServiceException ex)
         {
-            return StatusCode(
-                ex.StatusCode,
-                new ProblemDetails
-                {
-                    Status = ex.StatusCode,
-                    Title = $"{ex.ServiceName} unavailable",
-                    Detail =
-                        $"The {ex.ServiceName} could not be reached or returned an error."
-                });
+            return CreateDownstreamError(ex);
         }
 
         if (!stockReserved)
@@ -205,7 +182,8 @@ public class OrdersController : ControllerBase
             {
                 Status = StatusCodes.Status400BadRequest,
                 Title = "Unable to reserve inventory",
-                Detail = "The requested inventory could not be reserved."
+                Detail =
+                    "The requested inventory could not be reserved. Stock may have changed; please try again."
             });
         }
 
@@ -242,6 +220,7 @@ public class OrdersController : ControllerBase
             correlationId);
 
         // 10. RabbitMQ publishing will be enabled later
+        // Keep this commented until the event-driven workflow is configured.
         // await _rabbitMqPublisher.PublishOrderPlacedAsync(
         //     orderPlaced,
         //     cancellationToken);
@@ -307,6 +286,44 @@ public class OrdersController : ControllerBase
         await _db.SaveChangesAsync(cancellationToken);
 
         return NoContent();
+    }
+
+    // Convert downstream failures to appropriate HTTP status codes.
+    private ObjectResult CreateDownstreamError(
+        DownstreamServiceException ex)
+    {
+        int statusCode = GetDownstreamStatusCode(ex);
+
+        ProblemDetails problem = new ProblemDetails
+        {
+            Status = statusCode,
+            Title = $"{ex.ServiceName} error",
+            Detail =
+                $"The {ex.ServiceName} could not complete the request. Please try again."
+        };
+
+        return StatusCode(statusCode, problem);
+    }
+
+    private static int GetDownstreamStatusCode(
+        DownstreamServiceException ex)
+    {
+        if (ex.StatusCode == StatusCodes.Status503ServiceUnavailable)
+        {
+            return StatusCodes.Status503ServiceUnavailable;
+        }
+
+        if (ex.StatusCode == StatusCodes.Status504GatewayTimeout)
+        {
+            return StatusCodes.Status504GatewayTimeout;
+        }
+
+        if (ex.StatusCode >= 500)
+        {
+            return StatusCodes.Status502BadGateway;
+        }
+
+        return ex.StatusCode;
     }
 
     private static OrderResponse ToResponse(Order order)
