@@ -1,75 +1,60 @@
 # Team Contributions
 
-This document maps each team member to the components and responsibilities they own.
+This document describes the roles and responsibilities of each team member in the development of the Online Store Platform.
 
-## Member 1: ErlNievera — Backend / Integration Lead
-
-Responsible for the complete backend implementation and integration between services.
-
-**Components:**
-- CatalogService
-- OrderService
-- InventoryService
-- PaymentService
+## Member 1: Erl Lorence Nievera — Backend, Integration, Testing, and QA Lead
 
 **Responsibilities:**
-- REST APIs with full CRUD
-- RabbitMQ publisher/consumer integration
-- OrderPlaced event contract
-- Saga orchestration
-- Correlation ID propagation
-- Idempotency implementation
-- Retry and timeout handling
-- Compensation logic
-- Dead-letter queue configuration
-- Backend database integration (EF Core, migrations)
-- Service-to-service integration
-- Final backend integration testing
+- Developed and integrated the backend services.
+- Implemented REST API endpoints and CRUD operations.
+- Integrated Entity Framework Core and SQLite databases.
+- Implemented RabbitMQ event publishing and consumption.
+- Developed Saga orchestration and compensation logic.
+- Implemented correlation IDs, retries, and timeouts.
+- Integrated the backend services with each other.
+- Tested API endpoints using Swagger and Postman.
+- Tested successful and failed order scenarios.
+- Verified payment failure handling and inventory compensation.
+- Checked API responses, error handling, and service integration.
+- Performed end-to-end testing of the order workflow.
 
 ## Member 2: Klarence Villar — Storefront / UI Developer
 
-Responsible for the user-facing web application.
+**Responsibilities:**
+- Developed the ASP.NET Core Razor Pages storefront.
+- Implemented product listing and product information display.
+- Developed the checkout form and order submission process.
+- Integrated the storefront with backend API clients.
+- Implemented order confirmation and result pages.
+- Worked on form validation and error messages.
+- Improved page navigation and basic styling.
 
-**Components:**
-- Storefront Web Application
+## Member 3: Stefan Pimintel — Project Support
 
 **Responsibilities:**
-- ASP.NET Core MVC / Razor Pages setup
-- Product catalog UI
-- Product details page
-- Inventory display
-- Order creation UI
-- Order status/result pages
-- Backend API client integration
-- Form validation
-- UI error handling
-- Navigation and basic styling
+- Assist with organizing project files and materials.
+- Help prepare presentation slides and demonstration materials.
+- Support the team during the final project presentation.
+- Assist with other tasks assigned by the team.
 
-## Member 3: Stefan Pimintel — Testing / QA / Documentation
+## Shared Team Responsibilities
 
-Responsible for testing, quality assurance, and project documentation.
-
-**Components:**
-- Postman Collections
-- Test Documentation
-- README & Architecture
-
-**Responsibilities:**
-- Postman collection creation
-- Happy-path API testing
-- 400/404 negative testing
-- Payment failure testing
-- Compensation testing
-- Inventory failure testing
-- RabbitMQ duplicate-event testing
-- Idempotency testing
-- Retry/transient-failure testing
-- Dead-letter queue testing
-- Final integration testing
-- README documentation
-- Architecture diagram
-- Test documentation
+All team members are expected to:
+- Communicate and coordinate project progress.
+- Help resolve issues related to their assigned responsibilities.
+- Participate in the final project demonstration.
+- Keep their assigned work organized and ready for review.
 
 ## Commit History
 
-(To be updated as work progresses)
+Significant contributions will be recorded as development progresses.
+
+| Contributor | Main Area |
+|---|---|
+| Erl Lorence Nievera | Backend development, integration, testing, and QA |
+| Klarence Villar | Storefront development and UI integration |
+| Stefan Pimintel | Project support and presentation assistance |
+
+## Contribution Statement
+
+Each team member has an assigned role based on their responsibilities in the project. Contributions should be updated as work is completed to ensure that the document accurately reflects each member's participation.
