@@ -18,34 +18,32 @@ public class PaymentsController : ControllerBase
         _db = db;
     }
 
-    // GET: /payments/v1/payments
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PaymentResponse>>> GetPayments()
     {
-        var payments = await _db.Payments
+        List<PaymentResponse> payments = await _db.Payments
             .AsNoTracking()
-            .Select(p => new PaymentResponse
+            .Select(payment => new PaymentResponse
             {
-                Id = p.Id,
-                OrderId = p.OrderId,
-                Amount = p.Amount,
-                Status = p.Status,
-                PaymentMethod = p.PaymentMethod,
-                CreatedAt = p.CreatedAt,
-                UpdatedAt = p.UpdatedAt
+                Id = payment.Id,
+                OrderId = payment.OrderId,
+                Amount = payment.Amount,
+                Status = payment.Status,
+                PaymentMethod = payment.PaymentMethod,
+                CreatedAt = payment.CreatedAt,
+                UpdatedAt = payment.UpdatedAt
             })
             .ToListAsync();
 
         return Ok(payments);
     }
 
-    // GET: /payments/v1/payments/{id}
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<PaymentResponse>> GetPayment(Guid id)
     {
-        var payment = await _db.Payments
+        Payment? payment = await _db.Payments
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .FirstOrDefaultAsync(item => item.Id == id);
 
         if (payment is null)
         {
@@ -60,29 +58,48 @@ public class PaymentsController : ControllerBase
         return Ok(ToResponse(payment));
     }
 
-    // POST: /payments/v1/payments
     [HttpPost]
     public async Task<ActionResult<PaymentResponse>> CreatePayment(
         CreatePaymentRequest request)
     {
-        var now = DateTime.UtcNow;
+        if (request.OrderId == Guid.Empty)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid order",
+                Detail = "A valid OrderId is required."
+            });
+        }
 
-        var payment = new Payment
+        if (request.Amount <= 0)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid amount",
+                Detail = "Payment amount must be greater than zero."
+            });
+        }
+
+        // Demo simulation only. This does not charge a real payment method.
+        DateTime now = DateTime.UtcNow;
+
+        Payment payment = new Payment
         {
             Id = Guid.NewGuid(),
             OrderId = request.OrderId,
             Amount = request.Amount,
-            Status = "Pending",
+            Status = request.SimulateFailure ? "Failed" : "Succeeded",
             PaymentMethod = request.PaymentMethod,
             CreatedAt = now,
             UpdatedAt = now
         };
 
         _db.Payments.Add(payment);
-
         await _db.SaveChangesAsync();
 
-        var response = ToResponse(payment);
+        PaymentResponse response = ToResponse(payment);
 
         return CreatedAtAction(
             nameof(GetPayment),
@@ -90,14 +107,13 @@ public class PaymentsController : ControllerBase
             response);
     }
 
-    // PUT: /payments/v1/payments/{id}
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<PaymentResponse>> UpdatePayment(
         Guid id,
         UpdatePaymentRequest request)
     {
-        var payment = await _db.Payments
-            .FirstOrDefaultAsync(p => p.Id == id);
+        Payment? payment = await _db.Payments
+            .FirstOrDefaultAsync(item => item.Id == id);
 
         if (payment is null)
         {
@@ -119,12 +135,11 @@ public class PaymentsController : ControllerBase
         return Ok(ToResponse(payment));
     }
 
-    // DELETE: /payments/v1/payments/{id}
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeletePayment(Guid id)
     {
-        var payment = await _db.Payments
-            .FirstOrDefaultAsync(p => p.Id == id);
+        Payment? payment = await _db.Payments
+            .FirstOrDefaultAsync(item => item.Id == id);
 
         if (payment is null)
         {
@@ -137,7 +152,6 @@ public class PaymentsController : ControllerBase
         }
 
         _db.Payments.Remove(payment);
-
         await _db.SaveChangesAsync();
 
         return NoContent();

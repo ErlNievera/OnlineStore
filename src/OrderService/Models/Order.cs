@@ -1,4 +1,5 @@
-﻿namespace OrderService.Models;
+﻿
+namespace OrderService.Models;
 
 public class Order
 {
@@ -9,6 +10,8 @@ public class Order
     public string CustomerName { get; set; } = string.Empty;
 
     public string CustomerEmail { get; set; } = string.Empty;
+
+    public int Quantity { get; set; }
 
     public decimal TotalAmount { get; set; }
 

@@ -19,6 +19,7 @@ builder.Services.AddProblemDetails();
 // RabbitMQ consumer
 builder.Services.AddScoped<OrderPlacedConsumer>();
 builder.Services.AddHostedService<RabbitMqConsumerService>();
+builder.Services.AddSingleton<InventoryEventPublisher>();
 
 var app = builder.Build();
 

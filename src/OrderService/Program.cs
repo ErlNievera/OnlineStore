@@ -36,6 +36,8 @@ builder.Services.AddHttpClient<ICatalogApiClient, CatalogApiClient>(client =>
     options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
 });
 builder.Services.AddScoped<CatalogClient>();
+builder.Services.AddScoped<InventoryResultConsumer>();
+builder.Services.AddHostedService<RabbitMqConsumerService>();
 
 // Generated Inventory API Client
 builder.Services.AddHttpClient<IInventoryApiClient, InventoryApiClient>(client =>
@@ -64,6 +66,21 @@ builder.Services.AddHttpClient<InventoryClient>(client =>
     options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
     options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
 });
+
+
+builder.Services.AddHttpClient<PaymentClient>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5120/");
+})
+.AddHttpMessageHandler<CorrelationIdHandler>()
+.AddStandardResilienceHandler(options =>
+{
+    options.Retry.MaxRetryAttempts = 3;
+    options.Retry.Delay = TimeSpan.FromSeconds(1);
+    options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
+});
+
 
 builder.Services.AddSingleton<RabbitMqPublisher>();
 

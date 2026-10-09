@@ -11,6 +11,7 @@ public class OrderDbContext : DbContext
     }
 
     public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderSagaState> OrderSagaStates => Set<OrderSagaState>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +41,24 @@ public class OrderDbContext : DbContext
                 .IsRequired();
 
             entity.Property(o => o.UpdatedAt)
+                .IsRequired();
+        });
+        modelBuilder.Entity<OrderSagaState>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => x.OrderId)
+                .IsUnique();
+
+            entity.Property(x => x.Status)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(x => x.CorrelationId)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.Amount)
                 .IsRequired();
         });
     }
